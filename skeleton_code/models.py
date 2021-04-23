@@ -17,10 +17,12 @@ import torch.nn.functional as F
 
 
 def deconv(in_channels, out_channels, kernel_size, stride=2, padding=1, batch_norm=True):
-    """Creates a transposed-convolutional layer, with optional batch normalization.
+    """
+        Creates a transposed-convolutional layer, with optional batch normalization.
     """
     layers = []
-    layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias=False))
+    layers.append(nn.ConvTranspose2d(in_channels, out_channels,
+                                     kernel_size, stride, padding, bias=False))
     if batch_norm:
         layers.append(nn.BatchNorm2d(out_channels))
     return nn.Sequential(*layers)
@@ -30,9 +32,11 @@ def conv(in_channels, out_channels, kernel_size, stride=2, padding=1, batch_norm
     """Creates a convolutional layer, with optional batch normalization.
     """
     layers = []
-    conv_layer = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=False)
+    conv_layer = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
+                           kernel_size=kernel_size, stride=stride, padding=padding, bias=False)
     if init_zero_weights:
-        conv_layer.weight.data = torch.randn(out_channels, in_channels, kernel_size, kernel_size) * 0.001
+        conv_layer.weight.data = torch.randn(
+            out_channels, in_channels, kernel_size, kernel_size) * 0.001
     layers.append(conv_layer)
 
     if batch_norm:
@@ -47,7 +51,6 @@ class DCGenerator(nn.Module):
         ###########################################
         ##   FILL THIS IN: CREATE ARCHITECTURE   ##
         ###########################################
-
 
     def forward(self, z):
         """Generates an image given a sample of random noise.
@@ -71,7 +74,8 @@ class DCGenerator(nn.Module):
 class ResnetBlock(nn.Module):
     def __init__(self, conv_dim):
         super(ResnetBlock, self).__init__()
-        self.conv_layer = conv(in_channels=conv_dim, out_channels=conv_dim, kernel_size=3, stride=1, padding=1)
+        self.conv_layer = conv(
+            in_channels=conv_dim, out_channels=conv_dim, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
         out = x + self.conv_layer(x)
@@ -82,6 +86,7 @@ class CycleGenerator(nn.Module):
     """Defines the architecture of the generator network.
        Note: Both generators G_XtoY and G_YtoX have the same architecture in this assignment.
     """
+
     def __init__(self):
         super(CycleGenerator, self).__init__()
 
@@ -92,9 +97,30 @@ class CycleGenerator(nn.Module):
         # 1. Define the encoder part of the generator (that extracts features from the input image)
 
         # 2. Define the transformation part of the generator
-        
+
         # 3. Define the decoder part of the generator (that builds up the output image from features)
 
+        # in: (BS, 3, 32, 32), out: (BS, 32, 16, 16)
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=17),
+            nn.Batchnorm2d(32, affine=False)
+        )
+
+        # in: (BS, 32, 16, 16), out: (BS, 64, 8, 8)
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=9),
+            nn.Batchnorm2d(64, affine=False)
+        )
+
+        # in: (BS, 64, 8, 8), out: (BS, 128, 4, 4)
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5),
+            nn.Batchnorm2d128, affine=False)
+        )
+
+        # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
+        self.conv4=nn.Conv2d(
+            in_channels = 128, out_channels = 1, kernel_size = 4)
 
     def forward(self, x):
         """Generates an image conditioned on an input image.
@@ -108,35 +134,54 @@ class CycleGenerator(nn.Module):
                 out: BS x 3 x 32 x 32
         """
 
-        out = F.relu(self.conv1(x))
-        out = F.relu(self.conv2(out))
+        out=F.relu(self.conv1(x))
+        out=F.relu(self.conv2(out))
 
-        out = F.relu(self.resnet_block(out))
+        out=F.relu(self.resnet_block(out))
 
-        out = F.relu(self.deconv1(out))
-        out = F.tanh(self.deconv2(out))
+        out=F.relu(self.deconv1(out))
+        out=F.tanh(self.deconv2(out))
 
         return out
 
 
 class DCDiscriminator(nn.Module):
-    """Defines the architecture of the discriminator network.
-       Note: Both discriminators D_X and D_Y have the same architecture in this assignment.
     """
+        Defines the architecture of the discriminator network.
+        Note: Both discriminators D_X and D_Y have the same architecture in this assignment.
+    """
+
     def __init__(self):
         super(DCDiscriminator, self).__init__()
 
-        ###########################################
-        ##   FILL THIS IN: CREATE ARCHITECTURE   ##
-        ###########################################
+        # in: (BS, 3, 32, 32), out: (BS, 32, 16, 16)
+        self.conv1=nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=17),
+            nn.Batchnorm2d(32, affine=False)
+        )
+
+        # in: (BS, 32, 16, 16), out: (BS, 64, 8, 8)
+        self.conv2=nn.Sequential(
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=9),
+            nn.Batchnorm2d(64, affine=False)
+        )
+
+        # in: (BS, 64, 8, 8), out: (BS, 128, 4, 4)
+        self.conv3=nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5),
+            nn.Batchnorm2d128, affine = False)
+        )
+
+        # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
+        self.conv4=nn.Conv2d(
+            in_channels=128, out_channels=1, kernel_size=4)
 
     def forward(self, x):
 
-        out = F.relu(self.conv1(x))
-        out = F.relu(self.conv2(out))
-        out = F.relu(self.conv3(out))
+        out=F.relu(self.conv1(x))
+        out=F.relu(self.conv2(out))
+        out=F.relu(self.conv3(out))
 
-        out = self.conv4(out).squeeze()
-        out = F.sigmoid(out)
+        out=self.conv4(out).squeeze()
+        out=F.sigmoid(out)
         return out
-
