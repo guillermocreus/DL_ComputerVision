@@ -98,7 +98,67 @@ class CycleGenerator(nn.Module):
 
         # 2. Define the transformation part of the generator
 
-        # 3. Define the decoder part of the generator (that builds up the output image from features)
+        # 3. Define the decoder part of the generator (that builds up the output image from features
+
+        # in: (BS, 100, 1, 1), out: (BS, 128, 4, 4)
+        self.conv1 = nn.Sequential(
+            nn.ConvTranspose2d(in_channels=100, out_channels=128, kernel_size=4,
+                               stride=1, padding=0, bias=False),
+            nn.Batchnorm2d(128, affine=False)
+        )
+
+        # in: (BS, 128, 4, 4), out: (BS, 64, 8, 8)
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=4,
+                      stride=2, padding=1, bias=False),
+            nn.Batchnorm2d(64, affine=False)
+        )
+
+        # in: (BS, 64, 8, 8), out: (BS, 32, 16, 16)
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=4,
+                      stride=2, padding=1, bias=False),
+            nn.Batchnorm2d(32, affine=False)
+        )
+
+        # in: (BS, 32, 16, 16), out: (BS, 3, 32, 32)
+        self.conv4 = nn.Conv2d(
+            in_channels=32, out_channels=3, kernel_size=4, stride=2,
+            padding=1, bias=False
+        )
+
+    def forward(self, x):
+        """
+            Generates an image conditioned on an input image.
+
+            Input
+            -----
+                x: BS x 3 x 32 x 32
+
+            Output
+            ------
+                out: BS x 3 x 32 x 32
+        """
+
+        out = F.relu(self.conv1(x))
+        out = F.relu(self.conv2(out))
+
+        out = F.relu(self.resnet_block(out))
+
+        out = F.relu(self.deconv1(out))
+        out = F.tanh(self.deconv2(out))
+
+        return out
+
+
+class DCDiscriminator(nn.Module):
+    """
+        Defines the architecture of the discriminator network.
+        Note: Both discriminators D_X and D_Y have the same architecture in this assignment.
+    """
+
+    def __init__(self):
+        super(DCDiscriminator, self).__init__()
 
         # in: (BS, 3, 32, 32), out: (BS, 32, 16, 16)
         self.conv1 = nn.Sequential(
@@ -115,73 +175,19 @@ class CycleGenerator(nn.Module):
         # in: (BS, 64, 8, 8), out: (BS, 128, 4, 4)
         self.conv3 = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5),
-            nn.Batchnorm2d128, affine=False)
+            nn.Batchnorm2d(128, affine=False)
         )
 
         # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
-        self.conv4=nn.Conv2d(
-            in_channels = 128, out_channels = 1, kernel_size = 4)
-
-    def forward(self, x):
-        """Generates an image conditioned on an input image.
-
-            Input
-            -----
-                x: BS x 3 x 32 x 32
-
-            Output
-            ------
-                out: BS x 3 x 32 x 32
-        """
-
-        out=F.relu(self.conv1(x))
-        out=F.relu(self.conv2(out))
-
-        out=F.relu(self.resnet_block(out))
-
-        out=F.relu(self.deconv1(out))
-        out=F.tanh(self.deconv2(out))
-
-        return out
-
-
-class DCDiscriminator(nn.Module):
-    """
-        Defines the architecture of the discriminator network.
-        Note: Both discriminators D_X and D_Y have the same architecture in this assignment.
-    """
-
-    def __init__(self):
-        super(DCDiscriminator, self).__init__()
-
-        # in: (BS, 3, 32, 32), out: (BS, 32, 16, 16)
-        self.conv1=nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=17),
-            nn.Batchnorm2d(32, affine=False)
-        )
-
-        # in: (BS, 32, 16, 16), out: (BS, 64, 8, 8)
-        self.conv2=nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=9),
-            nn.Batchnorm2d(64, affine=False)
-        )
-
-        # in: (BS, 64, 8, 8), out: (BS, 128, 4, 4)
-        self.conv3=nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5),
-            nn.Batchnorm2d128, affine = False)
-        )
-
-        # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
-        self.conv4=nn.Conv2d(
+        self.conv4 = nn.Conv2d(
             in_channels=128, out_channels=1, kernel_size=4)
 
     def forward(self, x):
 
-        out=F.relu(self.conv1(x))
-        out=F.relu(self.conv2(out))
-        out=F.relu(self.conv3(out))
+        out = F.relu(self.conv1(x))
+        out = F.relu(self.conv2(out))
+        out = F.relu(self.conv3(out))
 
-        out=self.conv4(out).squeeze()
-        out=F.sigmoid(out)
+        out = self.conv4(out).squeeze()
+        out = F.sigmoid(out)
         return out
