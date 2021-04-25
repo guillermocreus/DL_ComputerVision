@@ -45,12 +45,26 @@ def conv(in_channels, out_channels, kernel_size, stride=2, padding=1, batch_norm
 
 
 class DCGenerator(nn.Module):
-    def __init__(self):
+    def __init__(self, noise_size, conv_dim):
         super(DCGenerator, self).__init__()
 
-        ###########################################
-        ##   FILL THIS IN: CREATE ARCHITECTURE   ##
-        ###########################################
+        # def deconv(in_channels, out_channels, kernel_size, stride=2, padding=1, batch_norm=True):
+
+        # in: (BS, 100, 1, 1), out: (BS, 128, 4, 4)
+        self.deconv1 = deconv(in_channels=noise_size, out_channels=conv_dim * 4,
+                              kernel_size=6, stride=2, padding=1, batch_norm=True)
+
+        # in: (BS, 128, 4, 4), out: (BS, 64, 8, 8)
+        self.deconv2 = deconv(in_channels=conv_dim * 4, out_channels=conv_dim * 2,
+                              kernel_size=4, stride=2, padding=1, batch_norm=True)
+
+        # in: (BS, 64, 8, 8), out: (BS, 32, 16, 16)
+        self.deconv3 = deconv(in_channels=conv_dim * 2, out_channels=conv_dim,
+                              kernel_size=4, stride=2, padding=1, batch_norm=True)
+
+        # in: (BS, 32, 16, 16), out: (BS, 3, 32, 32)
+        self.deconv4 = deconv(in_channels=conv_dim, out_channels=3, kernel_size=4,
+                              stride=2, padding=1, batch_norm=True)
 
     def forward(self, z):
         """Generates an image given a sample of random noise.
@@ -87,7 +101,7 @@ class CycleGenerator(nn.Module):
        Note: Both generators G_XtoY and G_YtoX have the same architecture in this assignment.
     """
 
-    def __init__(self):
+    def __init__(self, conv_dim, init_zero_weights):
         super(CycleGenerator, self).__init__()
 
         ###########################################
@@ -96,36 +110,28 @@ class CycleGenerator(nn.Module):
 
         # 1. Define the encoder part of the generator (that extracts features from the input image)
 
+        # in: (BS, 3, 32, 32), out: (BS, conv_dim, 16, 16)
+        self.conv1 = conv(in_channels=3, out_channels=conv_dim,
+                          kernel_size=5, stride=2, padding=2,
+                          init_zero_weights=init_zero_weights)
+        # in: (BS, conv_dim, 16, 16), out: (BS, conv_dim * 2, 8, 8)
+        self.conv2 = conv(in_channels=conv_dim, out_channels=conv_dim * 2,
+                          kernel_size=5, stride=2, padding=2,
+                          init_zero_weights=init_zero_weights)
+
         # 2. Define the transformation part of the generator
 
-        # 3. Define the decoder part of the generator (that builds up the output image from features
+        # in: (BS, conv_dim * 2, 8, 8), out: (BS, conv_dim * 2, 8, 8)
+        self.resnet_block = ResnetBlock(conv_dim * 2)
 
-        # in: (BS, 100, 1, 1), out: (BS, 128, 4, 4)
-        self.conv1 = nn.Sequential(
-            nn.ConvTranspose2d(in_channels=100, out_channels=128, kernel_size=4,
-                               stride=1, padding=0, bias=False),
-            nn.Batchnorm2d(128, affine=False)
-        )
+        # 3. Define the decoder part of the generator (that builds up the output image from features)
 
-        # in: (BS, 128, 4, 4), out: (BS, 64, 8, 8)
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=4,
-                      stride=2, padding=1, bias=False),
-            nn.Batchnorm2d(64, affine=False)
-        )
-
-        # in: (BS, 64, 8, 8), out: (BS, 32, 16, 16)
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=32, kernel_size=4,
-                      stride=2, padding=1, bias=False),
-            nn.Batchnorm2d(32, affine=False)
-        )
-
-        # in: (BS, 32, 16, 16), out: (BS, 3, 32, 32)
-        self.conv4 = nn.Conv2d(
-            in_channels=32, out_channels=3, kernel_size=4, stride=2,
-            padding=1, bias=False
-        )
+        # in: (BS, conv_dim * 2, 8, 8), out: (BS, conv_dim, 16, 16)
+        self.upconv1 = upconv(in_channels=conv_dim * 2,
+                              out_channels=conv_dim, kernel_size=5)
+        # in: (BS, conv_dim, 16, 16), out: (BS, 3, 32, 32)
+        self.upconv2 = upconv(in_channels=conv_dim,
+                              out_channels=3, kernel_size=5, batch_norm=False)
 
     def forward(self, x):
         """
@@ -157,30 +163,24 @@ class DCDiscriminator(nn.Module):
         Note: Both discriminators D_X and D_Y have the same architecture in this assignment.
     """
 
-    def __init__(self):
+    def __init__(self, conv_dim):
         super(DCDiscriminator, self).__init__()
 
         # in: (BS, 3, 32, 32), out: (BS, 32, 16, 16)
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=17),
-            nn.Batchnorm2d(32, affine=False)
-        )
+        self.conv1 = conv(in_channels=3, out_channels=conv_dim,
+                          kernel_size=3, stride=2, padding=1, batch_norm=True)
 
         # in: (BS, 32, 16, 16), out: (BS, 64, 8, 8)
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=9),
-            nn.Batchnorm2d(64, affine=False)
-        )
+        self.conv2 = conv(in_channels=conv_dim, out_channels=conv_dim * 2,
+                          kernel_size=3, stride=2, padding=1, batch_norm=True)
 
         # in: (BS, 64, 8, 8), out: (BS, 128, 4, 4)
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5),
-            nn.Batchnorm2d(128, affine=False)
-        )
+        self.conv3 = conv(in_channels=conv_dim * 2, out_channels=conv_dim * 4,
+                          kernel_size=3, stride=2, padding=1, batch_norm=True)
 
         # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
-        self.conv4 = nn.Conv2d(
-            in_channels=128, out_channels=1, kernel_size=4)
+        self.conv4 = conv(in_channels=conv_dim * 4, out_channels=1,
+                          kernel_size=6, stride=2, padding=1, batch_norm=True)
 
     def forward(self, x):
 

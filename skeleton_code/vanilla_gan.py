@@ -48,6 +48,7 @@ def train(train_loader, opt, device):
     total_train_iters = opts.num_epochs * len(train_loader)
 
     for epoch in range(opts.num_epochs):
+        print(f"Epoch: {epoch}/{opts.num_epochs}")
 
         for batch in train_loader:
 
@@ -61,7 +62,7 @@ def train(train_loader, opt, device):
 
             # FILL THIS IN
             # 1. Compute the discriminator loss on real images
-            D_real_loss = ((DCDiscriminator(real_images) - 1)**2).sum()
+            D_real_loss = ((D(real_images) - 1)**2).sum()
             D_real_loss /= 2 * real_images.shape[0]
 
             # 2. Sample noise
@@ -69,10 +70,10 @@ def train(train_loader, opt, device):
                                  opts.noise_size).to(device)
 
             # 3. Generate fake images from the noise
-            fake_images = CycleGenerator(noise)
+            fake_images = G(noise)
 
             # 4. Compute the discriminator loss on the fake images
-            D_fake_loss = (DCDiscriminator(fake_images)**2).sum()
+            D_fake_loss = (D(fake_images)**2).sum()
             D_fake_loss /= 2 * fake_images.shape[0]
 
             # 5. Compute the total discriminator loss
@@ -93,10 +94,10 @@ def train(train_loader, opt, device):
                                  opts.noise_size).to(device)
 
             # 2. Generate fake images from the noise
-            fake_images = CycleGenerator(noise)
+            fake_images = G(noise)
 
             # 3. Compute the generator loss
-            G_loss = ((DCDiscriminator(fake_images) - 1)**2).sum()
+            G_loss = ((D(fake_images) - 1)**2).sum()
             G_loss /= fake_images.shape[0]
 
             G_loss.backward()
@@ -130,9 +131,9 @@ def main(opts):
     create_dir(opts.sample_dir)
 
     if torch.cuda.is_available():
-        device = torch.device('cpu')
-    else:
         device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
     train(train_loader, opts, device)
 

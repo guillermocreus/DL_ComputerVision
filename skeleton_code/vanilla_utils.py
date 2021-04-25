@@ -2,6 +2,7 @@ import os
 import torch
 import scipy
 import scipy.misc
+import imageio
 import numpy as np
 from models import DCGenerator, DCDiscriminator
 
@@ -64,7 +65,8 @@ def save_samples(G, fixed_noise, iteration, opts):
 
     # merged = merge_images(X, fake_Y, opts)
     path = os.path.join(opts.sample_dir, 'sample-{:06d}.png'.format(iteration))
-    scipy.misc.imsave(path, grid)
+    # scipy.misc.imsave(path, grid)
+    imageio.imwrite(path, grid)
     print('Saved {}'.format(path))
 
 
