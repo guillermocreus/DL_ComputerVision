@@ -47,8 +47,14 @@ def train(train_loader, opt, device):
 #     bce_loss = torch.nn.BCELoss()
     total_train_iters = opts.num_epochs * len(train_loader)
 
+    all_gen_losses = []
+    all_disc_losses = []
+
     for epoch in range(opts.num_epochs):
         print(f"Epoch: {epoch}/{opts.num_epochs}")
+
+        gen_losses = []
+        disc_losses = []
 
         for batch in train_loader:
 
@@ -103,6 +109,9 @@ def train(train_loader, opt, device):
             G_loss.backward()
             g_optimizer.step()
 
+            gen_losses.append(G_loss.item())
+            disc_losses.append(D_total_loss.item())
+
             # Print the log info
             if iteration % opts.log_step == 0:
                 print('Iteration [{:4d}/{:4d}] | D_real_loss: {:6.4f} | D_fake_loss: {:6.4f} | G_loss: {:6.4f}'.format(
@@ -117,6 +126,9 @@ def train(train_loader, opt, device):
                 checkpoint(iteration, G, D, opts)
 
             iteration += 1
+
+        all_gen_losses.append(np.mean(gen_losses))
+        all_disc_losses.append(np.mean(disc_losses))
 
 
 def main(opts):
