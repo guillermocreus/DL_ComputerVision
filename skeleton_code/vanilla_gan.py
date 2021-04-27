@@ -11,6 +11,7 @@ import os
 import argparse
 import warnings
 import numpy as np
+import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore")
 
 # Torch imports
@@ -51,7 +52,7 @@ def train(train_loader, opt, device):
     all_disc_losses = []
 
     for epoch in range(opts.num_epochs):
-        print(f"Epoch: {epoch}/{opts.num_epochs}")
+        print(f"Epoch: {epoch + 1}/{opts.num_epochs}")
 
         gen_losses = []
         disc_losses = []
@@ -129,6 +130,24 @@ def train(train_loader, opt, device):
 
         all_gen_losses.append(np.mean(gen_losses))
         all_disc_losses.append(np.mean(disc_losses))
+
+    plt.xlabel("Epochs")
+    plt.ylabel("Generator loss")
+    plt.title("DCGAN - Generator")
+    plt.plot(list(range(1, opts.num_epochs + 1)), all_gen_losses)
+    plt.xticks(list(range(1, opts.num_epochs + 1)),
+               list(range(1, opts.num_epochs + 1)))
+    plt.show()
+    plt.clf()
+
+    plt.xlabel("Epochs")
+    plt.ylabel("Discriminator loss")
+    plt.title("DCGAN - Discriminator")
+    plt.plot(list(range(1, opts.num_epochs + 1)), all_disc_losses)
+    plt.xticks(list(range(1, opts.num_epochs + 1)),
+               list(range(1, opts.num_epochs + 1)))
+    plt.show()
+    plt.clf()
 
 
 def main(opts):
