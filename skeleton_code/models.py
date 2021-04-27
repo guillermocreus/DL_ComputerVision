@@ -52,19 +52,19 @@ class DCGenerator(nn.Module):
 
         # in: (BS, 100, 1, 1), out: (BS, 128, 4, 4)
         self.deconv1 = deconv(in_channels=noise_size, out_channels=conv_dim * 4,
-                              kernel_size=6, stride=2, padding=1, batch_norm=True)
+                              kernel_size=6, stride=2, padding=1)
 
         # in: (BS, 128, 4, 4), out: (BS, 64, 8, 8)
         self.deconv2 = deconv(in_channels=conv_dim * 4, out_channels=conv_dim * 2,
-                              kernel_size=4, stride=2, padding=1, batch_norm=True)
+                              kernel_size=4, stride=2, padding=1)
 
         # in: (BS, 64, 8, 8), out: (BS, 32, 16, 16)
         self.deconv3 = deconv(in_channels=conv_dim * 2, out_channels=conv_dim,
-                              kernel_size=4, stride=2, padding=1, batch_norm=True)
+                              kernel_size=4, stride=2, padding=1)
 
         # in: (BS, 32, 16, 16), out: (BS, 3, 32, 32)
         self.deconv4 = deconv(in_channels=conv_dim, out_channels=3, kernel_size=4,
-                              stride=2, padding=1, batch_norm=True)
+                              stride=2, padding=1, batch_norm=False)
 
     def forward(self, z):
         """Generates an image given a sample of random noise.
@@ -112,11 +112,11 @@ class CycleGenerator(nn.Module):
 
         # in: (BS, 3, 32, 32), out: (BS, conv_dim, 16, 16)
         self.conv1 = conv(in_channels=3, out_channels=conv_dim,
-                          kernel_size=5, stride=2, padding=2,
+                          kernel_size=3, stride=2, padding=1,
                           init_zero_weights=init_zero_weights)
         # in: (BS, conv_dim, 16, 16), out: (BS, conv_dim * 2, 8, 8)
         self.conv2 = conv(in_channels=conv_dim, out_channels=conv_dim * 2,
-                          kernel_size=5, stride=2, padding=2,
+                          kernel_size=3, stride=2, padding=1,
                           init_zero_weights=init_zero_weights)
 
         # 2. Define the transformation part of the generator
@@ -127,11 +127,12 @@ class CycleGenerator(nn.Module):
         # 3. Define the decoder part of the generator (that builds up the output image from features)
 
         # in: (BS, conv_dim * 2, 8, 8), out: (BS, conv_dim, 16, 16)
-        self.upconv1 = upconv(in_channels=conv_dim * 2,
-                              out_channels=conv_dim, kernel_size=5)
+        self.deconv1 = deconv(in_channels=conv_dim * 2, out_channels=conv_dim,
+                              kernel_size=4, stride=2, padding=1)
         # in: (BS, conv_dim, 16, 16), out: (BS, 3, 32, 32)
-        self.upconv2 = upconv(in_channels=conv_dim,
-                              out_channels=3, kernel_size=5, batch_norm=False)
+        self.deconv2 = deconv(in_channels=conv_dim, out_channels=3,
+                              kernel_size=4, stride=2, padding=1,
+                              batch_norm=False)
 
     def forward(self, x):
         """
@@ -145,12 +146,9 @@ class CycleGenerator(nn.Module):
             ------
                 out: BS x 3 x 32 x 32
         """
-
         out = F.relu(self.conv1(x))
         out = F.relu(self.conv2(out))
-
         out = F.relu(self.resnet_block(out))
-
         out = F.relu(self.deconv1(out))
         out = F.tanh(self.deconv2(out))
 
@@ -168,19 +166,20 @@ class DCDiscriminator(nn.Module):
 
         # in: (BS, 3, 32, 32), out: (BS, 32, 16, 16)
         self.conv1 = conv(in_channels=3, out_channels=conv_dim,
-                          kernel_size=3, stride=2, padding=1, batch_norm=True)
+                          kernel_size=3, stride=2, padding=1)
 
         # in: (BS, 32, 16, 16), out: (BS, 64, 8, 8)
         self.conv2 = conv(in_channels=conv_dim, out_channels=conv_dim * 2,
-                          kernel_size=3, stride=2, padding=1, batch_norm=True)
+                          kernel_size=3, stride=2, padding=1)
 
         # in: (BS, 64, 8, 8), out: (BS, 128, 4, 4)
         self.conv3 = conv(in_channels=conv_dim * 2, out_channels=conv_dim * 4,
-                          kernel_size=3, stride=2, padding=1, batch_norm=True)
+                          kernel_size=3, stride=2, padding=1)
 
         # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
         self.conv4 = conv(in_channels=conv_dim * 4, out_channels=1,
-                          kernel_size=6, stride=2, padding=1, batch_norm=True)
+                          kernel_size=6, stride=2, padding=1,
+                          batch_norm=False)
 
     def forward(self, x):
 
