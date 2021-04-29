@@ -52,7 +52,7 @@ class DCGenerator(nn.Module):
 
         # in: (BS, 100, 1, 1), out: (BS, 128, 4, 4)
         self.deconv1 = deconv(in_channels=noise_size, out_channels=conv_dim * 4,
-                              kernel_size=6, stride=2, padding=1)
+                              kernel_size=4, stride=1, padding=0)
 
         # in: (BS, 128, 4, 4), out: (BS, 64, 8, 8)
         self.deconv2 = deconv(in_channels=conv_dim * 4, out_channels=conv_dim * 2,
@@ -63,8 +63,9 @@ class DCGenerator(nn.Module):
                               kernel_size=4, stride=2, padding=1)
 
         # in: (BS, 32, 16, 16), out: (BS, 3, 32, 32)
-        self.deconv4 = deconv(in_channels=conv_dim, out_channels=3, kernel_size=4,
-                              stride=2, padding=1, batch_norm=False)
+        self.deconv4 = deconv(in_channels=conv_dim, out_channels=3,
+                              kernel_size=4, stride=2, padding=1,
+                              batch_norm=False)
 
     def forward(self, z):
         """Generates an image given a sample of random noise.
@@ -178,7 +179,7 @@ class DCDiscriminator(nn.Module):
 
         # in: (BS, 128, 4, 4), out: (BS, 1, 1, 1)
         self.conv4 = conv(in_channels=conv_dim * 4, out_channels=1,
-                          kernel_size=6, stride=2, padding=1,
+                          kernel_size=4, stride=1, padding=0,
                           batch_norm=False)
 
     def forward(self, x):

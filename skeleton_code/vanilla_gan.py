@@ -134,18 +134,18 @@ def train(train_loader, opt, device):
     plt.xlabel("Epochs")
     plt.ylabel("Generator loss")
     plt.title("DCGAN - Generator")
-    plt.plot(list(range(1, opts.num_epochs + 1)), all_gen_losses)
-    plt.xticks(list(range(1, opts.num_epochs + 1)),
-               list(range(1, opts.num_epochs + 1)))
+    plt.plot(all_gen_losses)
+    # plt.xticks(list(range(1, opts.num_epochs + 1)),
+    #            list(range(1, opts.num_epochs + 1)))
     plt.show()
     plt.clf()
 
     plt.xlabel("Epochs")
     plt.ylabel("Discriminator loss")
     plt.title("DCGAN - Discriminator")
-    plt.plot(list(range(1, opts.num_epochs + 1)), all_disc_losses)
-    plt.xticks(list(range(1, opts.num_epochs + 1)),
-               list(range(1, opts.num_epochs + 1)))
+    plt.plot(all_disc_losses)
+    # plt.xticks(list(range(1, opts.num_epochs + 1)),
+    #           list(range(1, opts.num_epochs + 1)))
     plt.show()
     plt.clf()
 

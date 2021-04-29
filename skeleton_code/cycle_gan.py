@@ -29,6 +29,9 @@ import numpy as np
 import scipy
 import scipy.misc
 
+# Matplotlib imports
+import matplotlib.pyplot as plt
+
 # Local imports
 from data_loader import get_emoji_loader
 from models import CycleGenerator, DCDiscriminator
@@ -76,6 +79,11 @@ def training_loop(dataloader_X, dataloader_Y, test_dataloader_X, test_dataloader
 
     iter_per_epoch = min(len(iter_X), len(iter_Y))
 
+    real_losses = []
+    fake_losses = []
+    G_XtoY_losses = []
+    G_YtoX_losses = []
+
     for iteration in range(1, opts.train_iters + 1):
 
         # Reset data_iter for each epoch
@@ -104,6 +112,7 @@ def training_loop(dataloader_X, dataloader_Y, test_dataloader_X, test_dataloader
         D_Y_loss /= images_Y.shape[0]
 
         d_real_loss = D_X_loss + D_Y_loss
+        real_losses.append(d_real_loss)
         d_real_loss.backward()
         d_optimizer.step()
 
@@ -125,6 +134,7 @@ def training_loop(dataloader_X, dataloader_Y, test_dataloader_X, test_dataloader
         D_Y_loss /= fake_Y.shape[0]
 
         d_fake_loss = D_X_loss + D_Y_loss
+        fake_losses.append(d_fake_loss)
         d_fake_loss.backward()
         d_optimizer.step()
 
@@ -151,7 +161,7 @@ def training_loop(dataloader_X, dataloader_Y, test_dataloader_X, test_dataloader
         cycle_consistency_loss /= images_Y.shape[0]
 
         g_loss += cycle_consistency_loss
-
+        G_YtoX_losses.append(g_loss)
         g_loss.backward()
         g_optimizer.step()
 
@@ -173,7 +183,7 @@ def training_loop(dataloader_X, dataloader_Y, test_dataloader_X, test_dataloader
         cycle_consistency_loss /= images_X.shape[0]
 
         g_loss += cycle_consistency_loss
-
+        G_XtoY_losses.append(g_loss)
         g_loss.backward()
         g_optimizer.step()
 
@@ -191,6 +201,38 @@ def training_loop(dataloader_X, dataloader_Y, test_dataloader_X, test_dataloader
         # Save the model parameters
         if iteration % opts.checkpoint_every == 0:
             checkpoint(iteration, G_XtoY, G_YtoX, D_X, D_Y, opts)
+
+    # Real images
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
+    plt.title("Discriminator loss on real images")
+    plt.plot(real_losses)
+    plt.show()
+    plt.clf()
+
+    # Fake images
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
+    plt.title("Discriminator loss on fake images")
+    plt.plot(fake_losses)
+    plt.show()
+    plt.clf()
+
+    # G_YtoX
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
+    plt.title("Y --> X Generator loss")
+    plt.plot(G_YtoX_losses)
+    plt.show()
+    plt.clf()
+
+    # G_XtoY
+    plt.xlabel("Iterations")
+    plt.ylabel("Loss")
+    plt.title("X --> Y Generator loss")
+    plt.plot(G_XtoY_losses)
+    plt.show()
+    plt.clf()
 
 
 def main(opts):
